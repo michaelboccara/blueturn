@@ -3,6 +3,8 @@
 // See https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 import { 
+  gEpicDB,
+  gInitEpicTime,
   gUpdateEpicTime, 
   gEpicImageData, 
   gEpicImageData0, 
@@ -12,7 +14,6 @@ import {
 } 
 from './app.js';
 import { gControlState } from './controlparams.js';
-import { gEpicEndTimeSec, gEpicStartTimeSec } from './epic.js';
 import gEpicImageLoader from './epic_image_loader.js';
 
 const canvas = document.getElementById('glcanvas');
@@ -87,7 +88,7 @@ let epicTexUnit = new Map();
 
 function glUseEpicTexture(program, epicImageData, epicStructUniformName)
 {
-  if (!epicImageData.image)
+  if (epicImageData && !epicImageData.image)
   {
     return true;
   }
@@ -128,6 +129,8 @@ void main() {
   gl_Position = vec4(a_position, 0, 1);
 }
 `;
+
+gInitEpicTime();
 
 Promise.all([
   loadShaderSource('./bt/epic_earth.frag.glsl'),
@@ -232,7 +235,8 @@ Promise.all([
     const [hasEpicData1, hasEpicTexture1] = glUpdateEPICImage(gEpicImageData1, 'epicImage[1]');
     const [hasEpicData, hasEpicTexture] = glUpdateEPICImage(gEpicImageData, 'curr_epicImage');
     gl.uniform1i(gl.getUniformLocation(program, 'showPivotCircle'), gControlState.showZoomCircle);
-    gl.uniform1f(gl.getUniformLocation(program, 'curr_epicImage.mix01'), gEpicImageData.mix01 );
+    if (gEpicImageData)
+      gl.uniform1f(gl.getUniformLocation(program, 'curr_epicImage.mix01'), gEpicImageData.mix01 );
 
     let epicTargetZoomFactor = gEpicZoom ? epicMaxZoom : 1.0;
     if (gPivotEpicImageData)
@@ -259,7 +263,7 @@ Promise.all([
   function render(time) 
   {
     // Nothing to show without bound times
-    if (gEpicStartTimeSec && gEpicEndTimeSec)
+    if (gEpicDB.isReady())
     {
       gUpdateEpicTime(time);
       glUpdateUniforms();

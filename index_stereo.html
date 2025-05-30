@@ -4,8 +4,8 @@
   <title>Blueturn in IFrame</title>
 </head>
 <body>
-  <iframe id="bt1" src="https://app.blueturn.earth?timespeed=3600" class="half"  frameborder="2" allowfullscreen></iframe>
-  <iframe id="bt2" src="https://app.blueturn.earth?timespeed=3600" class="half"  frameborder="2" allowfullscreen></iframe>
+  <iframe id="bt1" src="https://app.blueturn.earth?timeSpeed=3600" class="half"  frameborder="2" allowfullscreen></iframe>
+  <iframe id="bt2" src="https://app.blueturn.earth?timeSpeed=3600" class="half"  frameborder="2" allowfullscreen></iframe>
   <div id="uiOverlay">
     <button id="playToggle">Play</button>
     Time speed: <input type="range" id="timespeedSlider" name="Time speed" min="0" max="11" /><output id="timespeedValue"></output>
@@ -80,7 +80,7 @@
         timespeedValue.textContent = speed / 86400 + "d/s";
       }
       const msg = {
-        type: "timespeed",
+        type: "timeSpeed",
         value: speed
       }
       postMessage(msg);

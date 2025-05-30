@@ -19,7 +19,7 @@ export class TextureLoader {
 
     const controller = new AbortController();
     const signal = controller.signal;
-    this.pendingLoads.set(url, { controller });
+    this.pendingLoads.set(url, controller);
     
     fetch(url, { mode: 'cors', cache: 'force-cache', signal })
       .then(r => {
@@ -128,6 +128,21 @@ export class TextureLoader {
       entry.controller.abort();
       this.pendingLoads.delete(url);
     }
+  }
+
+  abortUrlsExcept(urls) {
+    let remainingPendingLoads = new Map();
+    urls.forEach((excludedUrl) => {
+      this._pendingLoads.forEach((controller, url) => {
+        if(url != excludedUrl) {
+          controller.abort();
+        }
+        else {
+          remainingPendingLoads.set(url, controller);
+        }
+      });
+    });
+    this._pendingLoads = remainingPendingLoads;
   }
 
   clearCache() {

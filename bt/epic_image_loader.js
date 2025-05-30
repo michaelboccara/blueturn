@@ -13,8 +13,8 @@ class EpicImageLoader
         });
     epicImageDataMap = new Map(); 
 
-    async loadImage(epicImageData, {onLoaded, onEvict}) {
-        const timeSec = (new Date(epicImageData.date)).getTime() / 1000;
+    async loadImage(epicImageData) {
+        const timeSec = epicImageData.timeSec;
         const foundEpicImageData = this.epicImageDataMap.get(timeSec);
         if (foundEpicImageData !== epicImageData) {
             this.epicImageDataMap.set(timeSec, epicImageData);
@@ -32,16 +32,18 @@ class EpicImageLoader
                     onSuccess: (url, tex) => {
                         epicImageData.texture = tex;
                         console.log("Loaded image: " + epicImageData.image + ", for date " + epicImageData.date);
-                        onLoaded?.();
                         resolve(tex);
                     },
-                    onError: (url, err) => {console.error('Error loading texture for image ' + imageName + ', ' + err); reject(err);},
-                    onAbort: (url, err) => {console.warn('Aborted loading texture for image ' + imageName + ', ' + err); reject(err);;},
+                    onError: (url, err) => {
+                        console.error('Error loading texture for image ' + imageName + ', ' + err); 
+                        reject(err);},
+                    onAbort: (url, err) => {
+                        const error = 'Aborted loading texture for image ' + imageName + ', ' + err;
+                        console.warn(error); 
+                        reject(error);},
                     onEvict: (url, tex) => {
                         epicImageData.texture = null;
-                        console.warn("Evicted image: " + epicImageData.image + ", for date " + epicImageData.date);
-                        onEvict?.();
-                    }
+                        console.warn("Evicted image: " + epicImageData.image + ", for date " + epicImageData.date);}
                 });
             }
             else if (epicImageData.texture)
@@ -57,7 +59,38 @@ class EpicImageLoader
     }
 
     markUsed(epicImageData) {
+        if (!epicImageData)
+        {
+            return;
+        }
+        if (!epicImageData.imageURL)
+        {
+            console.error("Undefined URL for EPIC image data " + epicImageData.date);
+            return;
+        }
         this.#textureLoader.markUsed(epicImageData.imageURL);
+    }
+
+    abortLoad(epicImageData) {
+        if (!epicImageData)
+        {
+            return;
+        }
+        if (!epicImageData.imageURL)
+        {
+            console.error("Undefined URL for EPIC image data " + epicImageData.date);
+            return;
+        }
+        this.#textureLoader.abort(epicImageData.imageURL);
+    }
+
+    abortEpicImageLoadsExcept(epicImageDataArray) {
+        let urls = [];
+        epicImageDataArray.forEach((epicImageData) => {
+            if (epicImageData && epicImageData.imageURL)
+                urls.push(epicImageData.imageURL);
+        });
+        this.#textureLoader.abortUrlsExcept(urls);
     }
 
     _calcEarthRadiusFromDistance(distance)

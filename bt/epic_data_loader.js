@@ -1,8 +1,10 @@
 import gNasaEpicAPI from './epic_api.js';
+import {gUpdateLoadingText} from './screen.js';
 
 class EpicDataLoader
 {
     #CACHE_DATE = "";
+    _pendingLoads = new Map();
 
     async _loadJsonCallURL(call, nocache = false)
     {
@@ -28,7 +30,10 @@ class EpicDataLoader
 
             const url = gNasaEpicAPI.getEpicCallURL(call, nocache);
             //console.log("Loading Epic Data URL: " + url);
-            fetch(url)
+            const controller = new AbortController();
+            const signal = controller.signal;            
+            this._pendingLoads.set(call, controller);
+            fetch(url, { mode: 'cors', cache: 'force-cache', signal })
             .then(response => {
                 if (!response.ok) {
                     reject (new Error('Network response was not ok: ' + response.statusText));
@@ -59,8 +64,20 @@ class EpicDataLoader
         return this._loadJsonCallURL(gNasaEpicAPI.getEpicDayCall(date), nocache);
     }
 
-    loadEpicDataForTimeSec(timeSec) 
-    {
+    abortEpicDayLoadsExcept(days) {
+        let remainingPendingLoads = new Map();
+        days.forEach((date) => {
+            const excludedCall = gNasaEpicAPI.getEpicDayCall(date);
+            this._pendingLoads.forEach((controller, call) => {
+                if(call != excludedCall) {
+                    controller.abort();
+                }
+                else {
+                    remainingPendingLoads.set(call, controller);
+                }
+            });
+        });
+        this._pendingLoads = remainingPendingLoads;
     }
 };
 
