@@ -330,4 +330,16 @@ Promise.all([
   }
 
   requestAnimationFrame(render);
+
+  let wakeLock = null;
+
+  async function requestWakeLock() {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch (err) {
+      console.error(`${err.name}, ${err.message}`);
+    }
+  }
+
+  requestWakeLock();
 });
