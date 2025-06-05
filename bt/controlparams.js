@@ -5,7 +5,7 @@
 export let gControlState = {
     source: 'nasa',
     timeSpeed: 3600,
-    play: false,
+    play: true,
     date: undefined,
     time: undefined,
     rangeSec: undefined,

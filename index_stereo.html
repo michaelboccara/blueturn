@@ -4,9 +4,9 @@
   <title>Blueturn in IFrame</title>
 </head>
 <body>
-  <iframe id="bt1" src="https://app.blueturn.earth?speed=3600&date=2022-03-21&time=00:00:00&range=1" 
+  <iframe id="bt1" src="index.html?speed=3600&date=2022-03-21&time=00:00:00&range=1" 
     class="half"  frameborder="2" allowfullscreen></iframe>
-  <iframe id="bt2" src="https://app.blueturn.earth?speed=3600&date=2022-03-21&time=00:45:00&range=1" 
+  <iframe id="bt2" src="index.html?speed=3600&date=2022-03-21&time=00:45:00&range=1" 
     class="half"  frameborder="2" allowfullscreen></iframe>
   <div id="uiOverlay">
     <button id="playToggle">Play</button>
@@ -59,7 +59,7 @@
       isPlaying = !isPlaying;
       let msg = {
         type: "play",
-        value: isPlaying
+        value: isPlaying ? 1 : 0
       }
       postMessage(msg);
       playToggle.textContent = isPlaying ? 'Pause' : 'Play';
@@ -82,7 +82,7 @@
         timespeedValue.textContent = speed / 86400 + "d/s";
       }
       const msg = {
-        type: "timeSpeed",
+        type: "speed",
         value: speed
       }
       postMessage(msg);

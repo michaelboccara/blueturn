@@ -239,7 +239,7 @@ Promise.all([
   function glSetBluemarbleEpicMixFactor(program)
   {
     let mixFactor;
-      const MAX_GAP_IN_SEC = 3.0 * 3600.0; // max gap between images of 3h
+      const MAX_GAP_IN_SEC = 2.0 * 3600.0; // max time distance from closest epic image: 2h
       const clamp = (num, a, b) =>
         Math.max(Math.min(num, Math.max(a, b)), Math.min(a, b));
     if (!gEpicImageData0 || !gEpicImageData1 || 

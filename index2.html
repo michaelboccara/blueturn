@@ -6,8 +6,8 @@
 <body>
   <button id="playToggle">Play</button><br>
   Time speed: <input type="range" id="timespeedSlider" name="Time speed" min="0" max="11" /><output id="timespeedValue"></output><br>
-  <iframe id="bt1" src="https://app.blueturn.earth?speed=3600&play=1&date=2024-12-21" width="800" height="600" frameborder="2" allowfullscreen></iframe>
-  <iframe id="bt2" src="https://app.blueturn.earth?speed=3600&play=1&date=2024-06-21" width="800" height="600" frameborder="2" allowfullscreen></iframe>
+  <iframe id="bt1" src="index.html?speed=3600&play=1&date=2024-12-21" width="800" height="600" frameborder="2" allowfullscreen></iframe>
+  <iframe id="bt2" src="index.html?speed=3600&play=1&date=2024-06-21" width="800" height="600" frameborder="2" allowfullscreen></iframe>
   <script>
     function postMessage(msg) {
       const iframes = [document.getElementById("bt1"), document.getElementById("bt2")];
@@ -24,7 +24,7 @@
       isPlaying = !isPlaying;
       let msg = {
         type: "play",
-        value: isPlaying
+        value: isPlaying ? 1 : 0
       }
       postMessage(msg);
       playToggle.textContent = isPlaying ? 'Pause' : 'Play';
@@ -47,7 +47,7 @@
         timespeedValue.textContent = speed / 86400 + "d/s";
       }
       const msg = {
-        type: "timeSpeed",
+        type: "speed",
         value: speed
       }
       postMessage(msg);
