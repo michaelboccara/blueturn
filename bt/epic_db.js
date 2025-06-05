@@ -476,24 +476,11 @@ export default class EpicDB {
     }
 
     _loadTwoImages(timeSec, epicImageData0, epicImageData1) {
-        if (epicImageData0)
-        {
-            if (epicImageData0.texture) {
-                loadPredictedFrames(this);
-            }
-            else {
-                this._loadImage(epicImageData0, () => {loadPredictedFrames(this);});
-            }
-        }
-        if (epicImageData1)
-        {
-            if (epicImageData1.texture) {
-                loadPredictedFrames(this);
-            }
-            else {
-                this._loadImage(epicImageData1, () => {loadPredictedFrames(this);});
-            }
-        }
+        if (epicImageData0 && !epicImageData0.texture)
+            this._loadImage(epicImageData0, () => {loadPredictedFrames(this);});
+        if (epicImageData1 && !epicImageData1.texture)
+            this._loadImage(epicImageData1, () => {loadPredictedFrames(this);});
+        loadPredictedFrames(this);
         function loadPredictedFrames(self) {
             if (epicImageData0 && epicImageData0.texture && 
                 epicImageData1 && epicImageData1.texture) {
@@ -534,6 +521,7 @@ export default class EpicDB {
             });
         }
         else if (epicImageDataKey0.texture && epicImageDataKey1.texture) {
+            this._predictAndLoadFrames(timeSec);
             return [epicImageDataKey0, epicImageDataKey1];
         }
         else {
