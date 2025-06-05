@@ -8,7 +8,7 @@ export let gControlState = {
     play: false,
     date: undefined,
     time: undefined,
-    loopRangeSec: 3600*24,
+    rangeSec: undefined,
     showText: true,
     zoomEnabled: true,
     showZoomCircle: true
@@ -16,11 +16,11 @@ export let gControlState = {
 
 let controlMap = new Map();
 controlMap.set('source', (v) => {gControlState.source = v;}); // 'nasa', 'bt-s3', 'bt-cdn'
-controlMap.set('timeSpeed', (v) => {gControlState.timeSpeed = parseInt(v);});
-controlMap.set('play', (v) => {gControlState.play = parseInt(v);});
+controlMap.set('speed', (v) => {gControlState.timeSpeed = parseInt(v);});
+controlMap.set('play', (v) => {gControlState.play = parseInt(v) != 0;});
 controlMap.set('date', (v) => {gControlState.date = v;});
 controlMap.set('time', (v) => {gControlState.time = v;});
-controlMap.set('loopRangeSec', (v) => {gControlState.loopRangeSec = parseInt(v);});
+controlMap.set('range', (v) => {gControlState.rangeSec = parseInt(v) * 24 * 3600;});
 controlMap.set('showText', (v) => {gControlState.showText = parseInt(v);});
 controlMap.set('zoomEnabled', (v) => {gControlState.zoomEnabled = parseInt(v);});
 controlMap.set('showZoomCircle', (v) => {gControlState.showZoomCircle = parseInt(v);});

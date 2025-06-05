@@ -16,7 +16,7 @@ export default class EpicImageLoader
         return new Promise((resolve, reject) => {
             this.#textureLoader.init()
             .then(() => {
-                console.log("EpicImageLoader initialized");
+                //console.log("EpicImageLoader initialized");
                 resolve();
             })
             .catch((err) => {

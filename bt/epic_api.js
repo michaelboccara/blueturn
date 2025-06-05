@@ -6,15 +6,15 @@ let gEpicAPI;
 switch (gControlState.source) 
 {
     case 'nasa':
-        console.log('Using NASA EPIC API');
+        console.log('Using NASA server for EPIC data');
         gEpicAPI = new NasaEpicAPI();
         break;
     case 'bt-s3':
-        console.log('Using BT/S3 EPIC API');
+        console.log('Using BT/S3 cloud for EPIC data');
         gEpicAPI = new BtEpicAPI(false);
         break;
     case 'bt-cdn':
-        console.log('Using BT/CDN EPIC API');
+        console.log('Using BT/CDN for EPIC data');
         gEpicAPI = new BtEpicAPI(true);
         break;
     default:

@@ -78,7 +78,7 @@ export async function gInitEpicTime()
             if (gEpicDB.hasEpicDataForTimeSec(startTimeSec))
             {
                 console.log("Start time: " + date_time);
-                gSetEpicTimeSec(startTimeSec);
+                gSetEpicTimeRange(startTimeSec, gControlState.rangeSec);
                 resolve(startTimeSec);
                 return;
             }
@@ -97,7 +97,7 @@ export async function gInitEpicTime()
                     // Should really not happen
                     console.error("Failed to fetch bound key EPIC frames - returned null")
                     console.log("Start time: " + date_time);
-                    gSetEpicTimeSec(startTimeSec);
+                    gSetEpicTimeRange(startTimeSec, gControlState.rangeSec);
                     resolve(startTimeSec);
                     return;
                 }
@@ -129,14 +129,14 @@ export async function gInitEpicTime()
                     gControlState.time = date_time.split(' ')[1];
                 }
                 console.log("Start time: " + date_time);
-                gSetEpicTimeSec(startTimeSec);
+                gSetEpicTimeRange(startTimeSec, gControlState.rangeSec);
                 resolve(startTimeSec);
                 return;
             })
             .catch((error) => {
                 console.error("Failed to fetch bound key frames around start time: " + error);
                 console.log("Start time: " + date_time);
-                gSetEpicTimeSec(startTimeSec);
+                gSetEpicTimeRange(startTimeSec, gControlState.rangeSec);
                 resolve(startTimeSec);
                 return;
             });
@@ -189,6 +189,12 @@ function getPivotNormal(pivotCoord, pivotEpicImageData, currentEpicImageData)
     return normal;
 }
 
+export function gSetEpicTimeRange(startTimeSec, rangeSec)
+{
+    gEpicDB.setTimeRange(startTimeSec, rangeSec);
+    gSetEpicTimeSec(startTimeSec);
+}
+
 export function gSetEpicTimeSec(timeSec)
 {
     //console.log("gEpicTimeSec: " + timeSec);
@@ -201,8 +207,16 @@ export function gSetEpicTimeSec(timeSec)
     {
         // Looping around default loop time range
         prevEpicTimeSec = latestEpicTimeSec;
-        timeSec = latestEpicTimeSec - gControlState.loopRangeSec;
-        console.log("Past latest available EPIC image time, jumping back to loop period of " + gControlState.loopRangeSec + "s");
+        const loopBackRangeSec = gControlState.rangeSec ? gControlState.rangeSec : 3600 * 24; // default to 24 hours
+        timeSec = latestEpicTimeSec - loopBackRangeSec;
+        //console.log("Past latest available EPIC image time, jumping back to loop period of " + loopBackRangeSec + "s");
+    }
+    if (timeSec > gEpicDB.getEndTime())
+    {
+        // Looping around default loop time range
+        prevEpicTimeSec = gEpicDB.getEndTime();
+        timeSec = gEpicDB.getStartTime();
+        //console.log("Past end of time range, jumping back to start time " + gEpicDB.getStartTime());
     }
     if (timeSec < oldestEpicTimeSec)
         // Block at oldest time
@@ -303,12 +317,12 @@ let dragTimeout = undefined;
 gScreen.addEventListener("drag", (e) => {
     if (epicPressTime && gEpicTimeSec)
     {
-        const deltaEpicTime = (e.deltaPos.x) / canvas.width * 3600 * 24;
-        gSetEpicTimeSec(gEpicTimeSec + deltaEpicTime, e.startPos);
+        const dragDeltaTime = (e.deltaPos.x) / canvas.width * 3600 * 24;
+        gSetEpicTimeSec(gEpicTimeSec + dragDeltaTime, e.startPos);
 
-        currentTimeSpeed = deltaEpicTime / e.deltaTime;
+        currentTimeSpeed = dragDeltaTime / e.deltaTime;
         dragging = true;
-        //console.log("gEpicTimeSec: " + gEpicTimeSec + ", deltaEpicTime: " + deltaEpicTime + ", currentTimeSpeed: " + currentTimeSpeed);
+        //console.log("gEpicTimeSec: " + gEpicTimeSec + ", dragDeltaTime: " + dragDeltaTime + ", currentTimeSpeed: " + currentTimeSpeed);
         // 
         // timeout event to catch absence of drag movement and reset speed accordingly
         if (dragTimeout) clearTimeout(dragTimeout);
@@ -452,9 +466,9 @@ export function gUpdateEpicTime(time)
         if (lastUpdateTime)
         {
             const DECCELERATION_FACTOR = 0.1; // Adjust this value to control the deceleration speed
-            const deltaTime = (time - lastUpdateTime) / 1000.0;
+            const systemDeltaTime = (time - lastUpdateTime) / 1000.0;
             currentTimeSpeed = lerp(currentTimeSpeed, targetSpeed, DECCELERATION_FACTOR);
-            gSetEpicTimeSec(gEpicTimeSec + deltaTime * currentTimeSpeed);
+            gSetEpicTimeSec(gEpicTimeSec + systemDeltaTime * currentTimeSpeed);
         }
     }
 

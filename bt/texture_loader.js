@@ -16,7 +16,7 @@ export class TextureLoader {
     return new Promise((resolve, reject) => {
       this._openImageDB()
       .then(() => {
-        console.log("TextureLoader initialized successfully");
+        //console.log("TextureLoader initialized successfully");
         resolve();
       })
       .catch(err => {
@@ -39,7 +39,7 @@ export class TextureLoader {
         this._indexedDB.createObjectStore(this._DB_STORE_NAME);
       };
       request.onsuccess = () => {
-        console.log("IndexedDB initialized successfully");
+        //console.log("IndexedDB initialized successfully");
         this._indexedDB = request.result;
         resolve(request.result);
       }
@@ -80,11 +80,11 @@ export class TextureLoader {
       const storew = txw.objectStore(this._DB_STORE_NAME);
       storew.put(blob, url);
       txw.oncomplete = () => {
-        console.log("Image stored in IndexedDB successfully");
+        //console.log("Image stored in IndexedDB successfully");
         resolve();
       };
       txw.onerror = () => {
-        console.error("Failed to store image in IndexedDB", txw.error);
+        console.warn("Failed to store image in IndexedDB", txw.error);
         reject(txw.error);
       }
     });

@@ -73,7 +73,7 @@ export default class EpicDataLoader
     }
 
     async loadEpicDay(date = gGetTodayDateStr(), nocache = false) {
-        console.log("Loading data for " + date + " from EPIC API...");
+        //console.log("Loading data for " + date + " from EPIC API...");
         return this._loadJsonCallURL(gEpicAPI.getEpicDayCall(date), nocache);
     }
 

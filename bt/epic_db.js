@@ -18,6 +18,8 @@ export default class EpicDB {
     _epicLastDay = undefined;
     _epicOldestTimeSec = undefined;
     _epicLatestTimeSec = undefined;
+    #startTimeSec = undefined;
+    #endTimeSec = undefined;
     _ready = false;
     #epicDataLoader = new EpicDataLoader();
     #epicImageLoader = new EpicImageLoader();
@@ -83,6 +85,14 @@ export default class EpicDB {
         const dateStr = date.toISOString().split('T')[0];
         return dateStr; // YYYY-MM-DD format
     }
+
+    setTimeRange(startTimeSec, rangeSec)
+    {
+        this.#startTimeSec = startTimeSec;
+        this.#endTimeSec = rangeSec != undefined ? startTimeSec + rangeSec : undefined;
+    }
+    getStartTime() {return this.#startTimeSec;}
+    getEndTime() {return this.#endTimeSec;}
 
     getEpicDataForTimeSec(timeSec)
     {
@@ -321,7 +331,12 @@ export default class EpicDB {
             for (let i = 1; i <= TIME_PREDICT_SEC; i++) {
                 nextTime += i * gControlState.timeSpeed;
                 if (nextTime > this._epicLatestTimeSec) {
-                    nextTime = this._epicLatestTimeSec - gControlState.loopRangeSec;
+                    const loopBackRangeSec = gControlState.rangeSec ? gControlState.rangeSec : 3600 * 24; // default to 24 hours
+                    nextTime = this._epicLatestTimeSec - loopBackRangeSec;
+                    break;
+                }
+                if (nextTime > this.#endTimeSec) {
+                    nextTime = this.#startTimeSec;
                     break;
                 }
                 try {
@@ -343,7 +358,7 @@ export default class EpicDB {
             }
         }
         if (numLoadedForward > 0) {
-            console.log("Preloaded (for play) " + numLoadedForward + " epic images forward from " + gGetDateFromTimeSec(timeSec));
+            //console.log("Preloaded (for play) " + numLoadedForward + " epic images forward from " + gGetDateFromTimeSec(timeSec));
         }
         const numLoadedForwardForPlay = numLoadedForward;
         let numLoadedBackward = 0;
@@ -384,10 +399,10 @@ export default class EpicDB {
             // If we fail to load, we can just stop preloading
         }
         if (numLoadedForward > numLoadedForwardForPlay) {
-            console.log("Preloaded (for scroll) " + (numLoadedForward - numLoadedForwardForPlay) + " more epic images forward from " + gGetDateFromTimeSec(timeSec));
+            //console.log("Preloaded (for scroll) " + (numLoadedForward - numLoadedForwardForPlay) + " more epic images forward from " + gGetDateFromTimeSec(timeSec));
         }
         if (numLoadedBackward > 0) {
-            console.log("Preloaded (for scroll) " + numLoadedBackward + " epic images backward from " + gGetDateFromTimeSec(timeSec));
+            //console.log("Preloaded (for scroll) " + numLoadedBackward + " epic images backward from " + gGetDateFromTimeSec(timeSec));
         }
     }
 
@@ -412,7 +427,16 @@ export default class EpicDB {
     async fetchBoundKeyFrames(timeSec) 
     {
         return new Promise((resolve, reject) => {
-            let [epicImageDataKey0, epicImageDataKey1] = this.getBoundKeyFrames(timeSec);
+            let epicImageDataKey0;
+            let epicImageDataKey1;
+
+            const boundPair = this.getBoundKeyFrames(timeSec);
+            if (!boundPair || boundPair.length !== 2) {
+                resolve(null); // likely aborted
+                return;
+            }
+            [epicImageDataKey0, epicImageDataKey1] = boundPair;
+
             if (epicImageDataKey0 && epicImageDataKey1)
             {
                 // If both frames are already loaded, return them
@@ -432,9 +456,19 @@ export default class EpicDB {
             {
                 this._loadEpicDay(dayStr)
                 .then(() => {
-                    [epicImageDataKey0, epicImageDataKey1] = this.getBoundKeyFrames(timeSec);
+                    const boundPair = this.getBoundKeyFrames(timeSec);
+                    if (!boundPair || boundPair.length !== 2) {
+                        resolve(null); // likely aborted
+                        return;
+                    }
+                    [epicImageDataKey0, epicImageDataKey1] = boundPair;
                     if (epicImageDataKey0 && epicImageDataKey1)
                         resolve([epicImageDataKey0, epicImageDataKey1]);
+                    else if (epicImageDataKey0 || epicImageDataKey1)
+                    {
+                        this.fetchBoundKeyFrames(timeSec) // maybe we miss prev or next
+                        .then((boundPair) => {resolve(boundPair);});
+                    }
                     else
                         resolve(null); // likely aborted
                 })
@@ -443,11 +477,16 @@ export default class EpicDB {
                 });
                 return;
             }
-            else if (!epicImageDataKey0)
+            else if (!epicImageDataKey0) // if left frame is missing
             {
                 this._loadEpicDay(prevDayStr)
                 .then(() => {
-                    [epicImageDataKey0, epicImageDataKey1] = this.getBoundKeyFrames(timeSec);
+                    const boundPair = this.getBoundKeyFrames(timeSec);
+                    if (!boundPair || boundPair.length !== 2) {
+                        resolve(null); // likely aborted
+                        return;
+                    }
+                    [epicImageDataKey0, epicImageDataKey1] = boundPair;
                     if (epicImageDataKey0 && epicImageDataKey1)
                         resolve([epicImageDataKey0, epicImageDataKey1]);
                     else
@@ -458,11 +497,16 @@ export default class EpicDB {
                 });
                 return;
             }
-            else //if (!epicImageDataKey1)
+            else //if (!epicImageDataKey1) // if right frame is missing
             {
                 this._loadEpicDay(nextDayStr)
                 .then(() => {
-                    [epicImageDataKey0, epicImageDataKey1] = this.getBoundKeyFrames(timeSec);
+                    const boundPair = this.getBoundKeyFrames(timeSec);
+                    if (!boundPair || boundPair.length !== 2) {
+                        resolve(null); // likely aborted
+                        return;
+                    }
+                    [epicImageDataKey0, epicImageDataKey1] = boundPair;
                     if (epicImageDataKey0 && epicImageDataKey1)
                         resolve([epicImageDataKey0, epicImageDataKey1]);
                     else

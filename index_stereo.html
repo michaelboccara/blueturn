@@ -4,8 +4,10 @@
   <title>Blueturn in IFrame</title>
 </head>
 <body>
-  <iframe id="bt1" src="https://app.blueturn.earth?timeSpeed=3600" class="half"  frameborder="2" allowfullscreen></iframe>
-  <iframe id="bt2" src="https://app.blueturn.earth?timeSpeed=3600" class="half"  frameborder="2" allowfullscreen></iframe>
+  <iframe id="bt1" src="https://app.blueturn.earth?speed=3600&date=2022-03-21&time=00:00:00&range=1" 
+    class="half"  frameborder="2" allowfullscreen></iframe>
+  <iframe id="bt2" src="https://app.blueturn.earth?speed=3600&date=2022-03-21&time=00:45:00&range=1" 
+    class="half"  frameborder="2" allowfullscreen></iframe>
   <div id="uiOverlay">
     <button id="playToggle">Play</button>
     Time speed: <input type="range" id="timespeedSlider" name="Time speed" min="0" max="11" /><output id="timespeedValue"></output>
