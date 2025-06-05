@@ -139,7 +139,13 @@ vec3 Render(in vec2 fragCoord)
     vec3 GroundBlueMarble = RenderBlueMarble(GroundNormal);
     vec3 GroundEpic0 = RenderEpicImage(GroundNormal, epicImage[0]);
     vec3 GroundEpic1 = RenderEpicImage(GroundNormal, epicImage[1]);
-    vec3 GroundEpicMix = mix(GroundEpic0, GroundEpic1, vec3(curr_epicImage.mix01));
+    vec3 GroundEpicMix;
+    if (!epicImage[0].hasTexture || !epicImage[0].hasData)
+        GroundEpicMix = GroundEpic1;
+    else if (!epicImage[1].hasTexture || !epicImage[1].hasData)
+        GroundEpicMix = GroundEpic0;
+    else
+        GroundEpicMix = mix(GroundEpic0, GroundEpic1, vec3(curr_epicImage.mix01));
     vec3 col = mix(GroundBlueMarble, GroundEpicMix, mixBmEpic);
 
     // Sphere hit:

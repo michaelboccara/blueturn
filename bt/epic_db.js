@@ -101,12 +101,12 @@ export default class EpicDB {
             return null; // No data for this day
         }
         const epicDayData = this._epicDays.get(dayStr);
-        if (!epicDayData || epicDayData.length === 0) {
+        if (!epicDayData || epicDayData.loading || !epicDayData.length) {
             return null; // No data for this day
         }
         // Check if there is an epic image for the given timeSec
         const epicImageData = epicDayData.find((epicImage) => {
-            return epicImage.timeSec === timeSec;
+            return epicImage && !epicImage.loading && epicImage.timeSec === timeSec;
         });
         return epicImageData;
     }
@@ -123,11 +123,11 @@ export default class EpicDB {
             return false; // No data for this day
         }
         const epicDayData = this._epicDays.get(dayStr);
-        if (!epicDayData || epicDayData.length === 0) {
+        if (!epicDayData || epicDayData.loading || !epicDayData.length) {
             return false; // No data for this day
         }
         // Check if the first epic image of the day matches the given timeSec
-        return timeSec <= epicDayData[0].timeSec;
+        return epicDayData[0] && !epicDayData[0].loading && timeSec <= epicDayData[0].timeSec;
     }
     
     isTimeSecLastOfDay(timeSec) {
@@ -137,11 +137,12 @@ export default class EpicDB {
             return false; // No data for this day
         }
         const epicDayData = this._epicDays.get(dayStr);
-        if (!epicDayData || epicDayData.length === 0) {
+        if (!epicDayData || epicDayData.loading || !epicDayData.length) {
             return false; // No data for this day
         }
         // Check if the last epic image of the day matches the given timeSec
-        return timeSec >= epicDayData[epicDayData.length - 1].timeSec;
+        const lastEpicImageData = epicDayData[epicDayData.length - 1];
+        return lastEpicImageData && !lastEpicImageData.loading && timeSec >= lastEpicImageData.timeSec;
     }
     
     _getPrevEpicImage(timeSec, strict = true) {
@@ -150,7 +151,7 @@ export default class EpicDB {
             return null; // No data for this day
         }
         const epicDayData = this._epicDays.get(dayStr);
-        if (!epicDayData || epicDayData.loading || epicDayData.length === 0) {
+        if (!epicDayData || epicDayData.loading || !epicDayData.length) {
             return null; // No data for this day
         }
 
@@ -171,7 +172,7 @@ export default class EpicDB {
             return null; // No data for the prev day
         }
         const prevEpicDayData = this._epicDays.get(prevDayStr);
-        if (!prevEpicDayData || prevEpicDayData.loading || prevEpicDayData.length === 0) {
+        if (!prevEpicDayData || prevEpicDayData.loading || !prevEpicDayData.length) {
             return null; // No data for the prev day
         }
         // Find the last epic image in the prev day data
@@ -184,7 +185,7 @@ export default class EpicDB {
             return null; // No data for this day
         }
         const epicDayData = this._epicDays.get(dayStr);
-        if (!epicDayData || epicDayData.loading || epicDayData.length === 0) {
+        if (!epicDayData || epicDayData.loading || !epicDayData.length) {
             return null; // No data for this day
         }
         // Find the first epic image after the given timeSec
@@ -204,7 +205,7 @@ export default class EpicDB {
             return null; // No data for the next day
         }
         const nextEpicDayData = this._epicDays.get(nextDayStr);
-        if (!nextEpicDayData || nextEpicDayData.loading || nextEpicDayData.length === 0) {
+        if (!nextEpicDayData || nextEpicDayData.loading || !nextEpicDayData.length) {
             return null; // No data for the next day
         }
         // Find the first epic image in the next day data
@@ -230,7 +231,7 @@ export default class EpicDB {
                 return;
             }
             const epicDayData = this._epicDays.get(dayStr);
-            if (epicDayData && !epicDayData.loading && epicDayData.length > 0) {
+            if (epicDayData && !epicDayData.loading && epicDayData.length) {
                 // Already loaded
                 callback?.(epicDayData);
                 resolve(epicDayData);
@@ -351,7 +352,7 @@ export default class EpicDB {
                     }
                 }
                 catch (error) {
-                    console.warn("Failed preloading epic images around timeSec " + nextTime + ": ", error);
+                    //console.warn("Failed preloading epic images around timeSec " + nextTime + ": ", error);
                     // If we fail to load, we can just stop preloading
                     break;
                 }
