@@ -91,8 +91,13 @@ function glUseEpicTexture(program, epicImageData, epicStructUniformName)
   {
     return true;
   }
+
+  const epicHasDataUniformName = epicStructUniformName + '.hasData';
   const epicTextureUniformName = epicStructUniformName + '.texture';
   const epicHasTextureUniformName = epicStructUniformName + '.hasTexture';
+
+  gl.uniform1i(gl.getUniformLocation(program, epicHasDataUniformName), !!epicImageData);
+
   if (!epicImageData || !epicImageData.texture)
   {
     setActiveTexture(program, epicTextureUniformName, null, 0);
@@ -157,26 +162,28 @@ Promise.all([
 
   function glUpdateEPICImage(epicImageData, epicImageUniformName)
   {
-    let hasEpicTexture = false;
     let hasEpicData = false;
-    if (epicImageData &&
-        epicImageData.centroid_matrix)
-    {
-      hasEpicData = true;
-      gl.uniform1f(
-        gl.getUniformLocation(program, epicImageUniformName + '.earth_radius'), 
-        epicImageData.earthRadius);
-      gl.uniformMatrix3fv(
-        gl.getUniformLocation(program, epicImageUniformName + '.centroid_matrix'),
-        false,
-        epicImageData.centroid_matrix
-      );
-      hasEpicTexture = glUseEpicTexture(program, epicImageData, epicImageUniformName);
-    }
-    else
+    let hasEpicTexture = false;
+    if (!epicImageData || !epicImageData.timeSec || !epicImageData.centroid_matrix || !epicImageData.earthRadius)
     {
       glUseEpicTexture(program, null, epicImageUniformName);
+      return [false, false];
     }
+
+    hasEpicData = true;
+    gl.uniform1f(
+      gl.getUniformLocation(program, epicImageUniformName + '.time_sec'), 
+      epicImageData.timeSec);
+    gl.uniform1f(
+      gl.getUniformLocation(program, epicImageUniformName + '.earth_radius'), 
+      epicImageData.earthRadius);
+    gl.uniformMatrix3fv(
+      gl.getUniformLocation(program, epicImageUniformName + '.centroid_matrix'),
+      false,
+      epicImageData.centroid_matrix
+    );
+
+    hasEpicTexture = glUseEpicTexture(program, epicImageData, epicImageUniformName);
 
     return [hasEpicData, hasEpicTexture];
   }

@@ -484,7 +484,7 @@ export function gUpdateEpicInterpolation()
 
     const boundPair = gEpicDB.fetchBoundFrames(gEpicTimeSec, currentTimeSpeed);
 
-    if (!boundPair)
+    if (!boundPair || boundPair.length != 2)
     {
         gEpicImageData = gEpicImageData0 = gEpicImageData1 = undefined;
         return false;
@@ -492,56 +492,70 @@ export function gUpdateEpicInterpolation()
 
     const [epicImageData0, epicImageData1] = boundPair;
 
-    console.assert(epicImageData0 && epicImageData1);
-    if (!epicImageData0)
+    if (!epicImageData0 && !epicImageData1)
     {
-        console.error("Failed to fetch prev key EPIC frames - returned null");
-        gEpicImageData = gEpicImageData0 = gEpicImageData1 = undefined;
-        return false;
-    }
-    if (!epicImageData1)
-    {
-        console.error("Failed to fetch next key EPIC frames - returned null");
         gEpicImageData = gEpicImageData0 = gEpicImageData1 = undefined;
         return false;
     }
 
-    console.assert(epicImageData0.timeSec <= gEpicTimeSec && gEpicTimeSec <= epicImageData1.timeSec, 
-        "Invalid bounds: " +
-        "gEpicTimeSec: " + gEpicTimeSec + 
-        ", epicImageData0.timeSec: " + epicImageData0.timeSec + 
-        ", epicImageData1.timeSec: " + epicImageData1.timeSec);
-    const mixFactor  = (epicImageData0.timeSec != epicImageData1.timeSec) ?
-        (gEpicTimeSec - epicImageData0.timeSec) / (epicImageData1.timeSec - epicImageData0.timeSec) :
-        0.0
+    let epicImageData = {};
 
-    let epicImageData = {}
+    if (!epicImageData0) { // but epicImageData1 exists
+        console.assert(epicImageData0.timeSec <= gEpicTimeSec, 
+            "Invalid left-bound: " +
+            "gEpicTimeSec: " + gEpicTimeSec + " < epicImageData0.timeSec: " + epicImageData0.timeSec); 
 
-    epicImageData.time_sec = gEpicTimeSec;
-    epicImageData.mix01 = mixFactor;
+        epicImageData = epicImageData1;
+        epicImageData.mix01 = 1.0;
+        if (gControlState.play && gControlState.timeSpeed > 0.0)
+            return false; // we will use this false return value to block during play
+    }
 
-    // Interpolate Radius:
-    let earthRadius0 = epicImageData0.earthRadius;
-    let earthRadius1 = epicImageData1.earthRadius;
-    epicImageData.earthRadius = mix(earthRadius0, earthRadius1, epicImageData.mix01);
+    if (!epicImageData1) { // but epicImageData0 exists
+        console.assert(epicImageData1.timeSec >= gEpicTimeSec, 
+            "Invalid right-bound: " +
+            "gEpicTimeSec: " + gEpicTimeSec + " > epicImageData1.timeSec: " + epicImageData1.timeSec); 
 
-    // Interpolate lat, lon
-    let epicCentroidLat0 = epicImageData0.centroid_coordinates.lat;
-    let epicCentroidLon0 = epicImageData0.centroid_coordinates.lon;
-    let epicCentroidLat1 = epicImageData1.centroid_coordinates.lat;
-    let epicCentroidLon1 = epicImageData1.centroid_coordinates.lon;
-    if (epicCentroidLon1 > epicCentroidLon0)
-        epicCentroidLon0 += 360.0;
-    epicImageData.centroid_coordinates = {};
-    epicImageData.centroid_coordinates.lat = mix(epicCentroidLat0, epicCentroidLat1, epicImageData.mix01);
-    epicImageData.centroid_coordinates.lon = mix(epicCentroidLon0, epicCentroidLon1, epicImageData.mix01);
+        epicImageData = epicImageData0;
+        epicImageData.mix01 = 0.0;
+        if (gControlState.play && gControlState.timeSpeed > 0.0)
+            return false; // we will use this false return value to block during play
+    }
 
-    epicImageData.centroid_matrix = gCalcLatLonNorthRotationMatrix(
-        epicImageData.centroid_coordinates.lat, 
-        epicImageData.centroid_coordinates.lon);
+    if (epicImageData.mix01 === undefined) { // means both bounds exist
+        epicImageData.mix01 = (epicImageData0.timeSec != epicImageData1.timeSec) ?
+            (gEpicTimeSec - epicImageData0.timeSec) / (epicImageData1.timeSec - epicImageData0.timeSec) :
+            0.0;
+
+        epicImageData.timeSec = gEpicTimeSec;
+
+        // Interpolate Radius:
+        let earthRadius0 = epicImageData0.earthRadius;
+        let earthRadius1 = epicImageData1.earthRadius;
+        epicImageData.earthRadius = mix(earthRadius0, earthRadius1, epicImageData.mix01);
+
+        // Interpolate lat, lon
+        let epicCentroidLat0 = epicImageData0.centroid_coordinates.lat;
+        let epicCentroidLon0 = epicImageData0.centroid_coordinates.lon;
+        let epicCentroidLat1 = epicImageData1.centroid_coordinates.lat;
+        let epicCentroidLon1 = epicImageData1.centroid_coordinates.lon;
+        if (epicCentroidLon1 > epicCentroidLon0)
+            epicCentroidLon0 += 360.0;
+        epicImageData.centroid_coordinates = {};
+        epicImageData.centroid_coordinates.lat = mix(epicCentroidLat0, epicCentroidLat1, epicImageData.mix01);
+        epicImageData.centroid_coordinates.lon = mix(epicCentroidLon0, epicCentroidLon1, epicImageData.mix01);
+
+        epicImageData.centroid_matrix = gCalcLatLonNorthRotationMatrix(
+            epicImageData.centroid_coordinates.lat, 
+            epicImageData.centroid_coordinates.lon);
+    }
 
     [gEpicImageData, gEpicImageData0, gEpicImageData1] = 
     [epicImageData, epicImageData0, epicImageData1];
+
+    if (gControlState.play && gControlState.timeSpeed > 0.0 &&
+        (!gEpicImageData0.texture || !gEpicImageData1.texture))
+        return false; // we will use this false return value to block during play
 
     return true;
 }

@@ -28,6 +28,7 @@ uniform bool showPivotCircle;
 struct EPICImageInfo
 {
     sampler2D texture;
+    bool hasData; 
     bool hasTexture; 
     mat3 centroid_matrix;
     float earth_radius;
@@ -61,6 +62,9 @@ vec3 RenderBlueMarble(in vec3 GroundNormal)
 
 vec3 RenderEpicImage(vec3 GroundNormal, EPICImageInfo epicImage)
 {
+    if (!epicImage.hasTexture)
+        return vec3(0.0);
+
     // Epic image rotation from ground
     mat3 EpicMatrix0 = transpose(epicImage.centroid_matrix);
 
@@ -132,16 +136,43 @@ vec3 Render(in vec2 fragCoord)
     vec3 GroundNormal = Normal * GroundMatrix;
 
     vec3 col;
-    if (!epicImage[0].hasTexture ||
-        !epicImage[1].hasTexture)
+    vec3 GroundBlueMarble = RenderBlueMarble(GroundNormal);
+    if (!epicImage[0].hasData ||
+        !epicImage[1].hasData)
     {
-        col = RenderBlueMarble(GroundNormal);
+        col = GroundBlueMarble;
     }
-    else
-    {
+    else {
         vec3 GroundEpic0 = RenderEpicImage(GroundNormal, epicImage[0]);
         vec3 GroundEpic1 = RenderEpicImage(GroundNormal, epicImage[1]);
-        col = mix(GroundEpic0, GroundEpic1, vec3(curr_epicImage.mix01));
+        float MAX_GAP_IN_SEC = 3.0 * 3600.0; // max gap between images of 3h
+        if (epicImage[0].hasTexture &&
+             epicImage[1].hasTexture)
+        {
+            vec3 GroundEpicMix = mix(GroundEpic0, GroundEpic1, vec3(curr_epicImage.mix01));
+            float boundDist01 = min(
+                abs(curr_epicImage.time_sec - epicImage[0].time_sec), 
+                abs(curr_epicImage.time_sec - epicImage[1].time_sec)) / MAX_GAP_IN_SEC;
+            float mixEpicBM = clamp(boundDist01, 1.0, 2.0) - 1.0;
+            col = mix(GroundEpicMix, GroundBlueMarble, mixEpicBM);
+        }
+        else if (epicImage[0].hasTexture)
+        {
+            float boundDist0 = abs(curr_epicImage.time_sec - epicImage[0].time_sec) / MAX_GAP_IN_SEC;
+            float mixEpicBM = clamp(boundDist0, 1.0, 2.0) - 1.0;
+            col = mix(GroundEpic0, GroundBlueMarble, mixEpicBM);
+        }
+        else if (epicImage[1].hasTexture)
+        {
+            float boundDist1 = abs(curr_epicImage.time_sec - epicImage[1].time_sec) / MAX_GAP_IN_SEC;
+            float mixEpicBM = clamp(boundDist1, 1.0, 2.0) - 1.0;
+            col = mix(GroundEpic1, GroundBlueMarble, mixEpicBM);
+        }
+        else
+        {
+            // checked already - shouldn't get there
+            col = GroundBlueMarble;
+        }
     }
 
     // Sphere hit:
