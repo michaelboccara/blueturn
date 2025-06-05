@@ -2,21 +2,25 @@
 // Licensed under CC BY-NC-SA 4.0.
 // See https://creativecommons.org/licenses/by-nc-sa/4.0/
 
-import {gLoadEpicImagesForDay} from './epic.js';
-
 export let gControlState = {
+    source: 'nasa',
     timeSpeed: 3600,
-    playing: true,
+    play: false,
     date: undefined,
+    time: undefined,
+    loopRangeSec: 3600*24,
     showText: true,
     zoomEnabled: true,
     showZoomCircle: true
 };
 
 let controlMap = new Map();
-controlMap.set('timespeed', (v) => {gControlState.timeSpeed = parseInt(v);});
-controlMap.set('play', (v) => {gControlState.playing = parseInt(v);});
-controlMap.set('date', (v) => {gControlState.date = v; gLoadEpicImagesForDay(gControlState.date)});
+controlMap.set('source', (v) => {gControlState.source = v;}); // 'nasa', 'bt-s3', 'bt-cdn'
+controlMap.set('timeSpeed', (v) => {gControlState.timeSpeed = parseInt(v);});
+controlMap.set('play', (v) => {gControlState.play = parseInt(v);});
+controlMap.set('date', (v) => {gControlState.date = v;});
+controlMap.set('time', (v) => {gControlState.time = v;});
+controlMap.set('loopRangeSec', (v) => {gControlState.loopRangeSec = parseInt(v);});
 controlMap.set('showText', (v) => {gControlState.showText = parseInt(v);});
 controlMap.set('zoomEnabled', (v) => {gControlState.zoomEnabled = parseInt(v);});
 controlMap.set('showZoomCircle', (v) => {gControlState.showZoomCircle = parseInt(v);});
