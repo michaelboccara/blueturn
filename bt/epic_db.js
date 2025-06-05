@@ -352,18 +352,6 @@ export default class EpicDB {
             let [epicImageData0, epicImageData1] = await this.fetchBoundKeyFrames(timeSec);
             const SCROLL_PREDICT_NUM_FRAMES = 10;
             for (let i = 1; i <= SCROLL_PREDICT_NUM_FRAMES; i++) {
-                if (epicImageData0)
-                {
-                    const timeSec = epicImageData0.timeSec;
-                    epicImageData0 = this._getPrevEpicImage(timeSec, true);
-                    if (!epicImageData0)
-                        await this.fetchBoundKeyFrames(timeSec);
-                    epicImageData0 = this._getPrevEpicImage(timeSec, true);
-                    if (epicImageData0 && !epicImageData0.texture && !epicImageData0.textureLoading) {
-                        await this._loadImage(epicImageData0);
-                        numLoadedBackward++;
-                    }
-                }
                 if (epicImageData1 && numLoadedForward < SCROLL_PREDICT_NUM_FRAMES)
                 {
                     const timeSec = epicImageData1.timeSec;
@@ -374,6 +362,18 @@ export default class EpicDB {
                     if (epicImageData1 && !epicImageData1.texture && !epicImageData1.textureLoading) {
                         await this._loadImage(epicImageData1);
                         numLoadedForward++;
+                    }
+                }
+                if (epicImageData0)
+                {
+                    const timeSec = epicImageData0.timeSec;
+                    epicImageData0 = this._getPrevEpicImage(timeSec, true);
+                    if (!epicImageData0)
+                        await this.fetchBoundKeyFrames(timeSec);
+                    epicImageData0 = this._getPrevEpicImage(timeSec, true);
+                    if (epicImageData0 && !epicImageData0.texture && !epicImageData0.textureLoading) {
+                        await this._loadImage(epicImageData0);
+                        numLoadedBackward++;
                     }
                 }
             }
