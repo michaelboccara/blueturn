@@ -21,6 +21,7 @@ const pageLoadTime = Date.now();
 
 let epicZoomFactor = 1.0;
 let epicMaxZoom = 2.0;
+let mixBMEpicFactor = undefined;
 
 // Load shader from file
 async function loadShaderSource(url) {
@@ -234,6 +235,48 @@ Promise.all([
   const renderTracker = new LoadEventTracker('render');
   const epicImageTracker = new LoadEventTracker('epic-image');
   const epicDataTracker = new LoadEventTracker('bluemarble-image');
+  
+  function glSetBluemarbleEpicMixFactor(program)
+  {
+    let mixFactor;
+      const MAX_GAP_IN_SEC = 3.0 * 3600.0; // max gap between images of 3h
+      const clamp = (num, a, b) =>
+        Math.max(Math.min(num, Math.max(a, b)), Math.min(a, b));
+    if (!gEpicImageData0 || !gEpicImageData1 || 
+        (!gEpicImageData0.texture && !gEpicImageData1.texture))
+    {
+        // we can't even interpolate geometry, and we don't have any valid EPIC texture anchor
+        mixFactor = 0.0;
+    }
+    else if (!gEpicImageData1.texture)
+    {
+        const boundDist0 = Math.abs(gEpicImageData.timeSec - gEpicImageData0.timeSec) / MAX_GAP_IN_SEC;
+        mixFactor = 2.0 - clamp(boundDist0, 1.0, 2.0);
+    }
+    else if (!gEpicImageData0.texture)
+    {
+        const boundDist1 = Math.abs(gEpicImageData.timeSec - gEpicImageData1.timeSec) / MAX_GAP_IN_SEC;
+        mixFactor = 2.0 - clamp(boundDist1, 1.0, 2.0);
+    }
+    else
+    {
+        const boundDist01 = Math.min(
+            Math.abs(gEpicImageData.timeSec - gEpicImageData0.timeSec), 
+            Math.abs(gEpicImageData.timeSec - gEpicImageData1.timeSec)) / MAX_GAP_IN_SEC;
+        mixFactor = 2.0 - clamp(boundDist01, 1.0, 2.0);
+    }
+
+    function lerp( a, b, alpha ) {
+        return a + alpha * ( b - a );
+    }
+
+    if (mixBMEpicFactor !== undefined)
+      mixBMEpicFactor = lerp(mixBMEpicFactor, mixFactor, 0.1);
+    else
+      mixBMEpicFactor = mixFactor;
+
+    gl.uniform1f(gl.getUniformLocation(program, 'mixBmEpic'), mixBMEpicFactor);
+  }
 
   function glUpdateUniforms()
   {
@@ -243,6 +286,7 @@ Promise.all([
     gl.uniform1i(gl.getUniformLocation(program, 'showPivotCircle'), gControlState.showZoomCircle);
     if (gEpicImageData)
       gl.uniform1f(gl.getUniformLocation(program, 'curr_epicImage.mix01'), gEpicImageData.mix01 );
+    glSetBluemarbleEpicMixFactor(program);
 
     let epicTargetZoomFactor = gEpicZoom ? epicMaxZoom : 1.0;
     if (gPivotEpicImageData)
