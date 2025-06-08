@@ -25,7 +25,6 @@ document.getElementById('btLogo').addEventListener('click', function() {
 const canvas = document.getElementById('glcanvas');
 
 let epicPressTime = undefined;
-let holding = false;
 let longPressing = false;
 let currentTimeSpeed = 0.0;
 let pivotStartPos = undefined;
@@ -151,7 +150,7 @@ gScreen.addEventListener("down", (e) => {
     if (gEpicTimeSec)
     {
         epicPressTime = gEpicTimeSec;
-        holding = true;
+        gControlState.holding = true;
     }
 });
 
@@ -164,7 +163,7 @@ function unhold(pos)
         epicPressTime = undefined;
         longPressing = false;
     }
-    holding = false;
+    gControlState.holding = false;
 }
 
 gScreen.addEventListener("up", (e) => {
@@ -309,7 +308,7 @@ gScreen.addEventListener("click", (e) => {
         'trigger-event': 'click',
         'zoom': gEpicZoom
     });
-    holding = false;
+    gControlState.holding = false;
 });
 
 let dragging = false;
@@ -460,7 +459,7 @@ export function gUpdateEpicTime(time)
         return;
     }
 
-    if (!holding)
+    if (!gControlState.holding)
     {
         const targetSpeed = gControlState.play ? gControlState.timeSpeed : 0.0;
         if (lastUpdateTime)

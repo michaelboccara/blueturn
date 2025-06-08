@@ -28,8 +28,29 @@ export default class EpicDB {
         return new Promise((resolve, reject) => {
             this.#epicImageLoader.init()
             .then(() => {
-                return this.#epicDataLoader.loadEpicAvailableDays()
+                return this.loadLatest();
             })
+            .then(() => {
+                this._ready = true; // enough to get the latest
+                console.log("EPIC DB initialized successfully");
+                resolve();
+                return this._loadEpicDay(this._epicFirstDay);
+            })
+            .then((firstDayData) => {
+                const firstEpicData = firstDayData[0];
+                this._epicOldestTimeSec = firstEpicData.timeSec;
+                console.log("Oldest available data from EPIC: " + firstEpicData.date + ", timeSec=" + this._epicOldestTimeSec);
+            })
+            .catch((error) => {
+                console.error("Failed to initialize EPIC DB: ", error);
+                reject(error);
+            });
+        });
+    }
+
+    async loadLatest() {
+        return new Promise((resolve, reject) => {
+            this.#epicDataLoader.loadEpicAvailableDays()
             .then((all_days1) => {
                 if (!all_days1 || all_days1.length === 0) {
                     // Something is corrupted - better to clear the cache and reject
@@ -43,31 +64,20 @@ export default class EpicDB {
                 this._epicLastDay = gEpicAPI.getAvailableDateFromIndex(all_days1, 0);
                 console.log("Last available day from EPIC: " + this._epicLastDay);
                 this._epicFirstDay = gEpicAPI.getAvailableDateFromIndex(all_days1, all_days1.length-1);
-                this._loadEpicDay(this._epicLastDay)
-                .then((lastDayData) => {
-                    const lastEpicData = lastDayData[lastDayData.length - 1];
-                    this._epicLatestTimeSec = lastEpicData.timeSec;
-                    console.log("Latest available data from EPIC: " + lastEpicData.date + ", timeSec=" + this._epicLatestTimeSec);
-                    this._ready = true; // enough to get the latest
-                    resolve();        
-                })
-                .catch((error) => {
-                    reject("Failed to load last day " + this._epicLastDay + " :" + error)
-                });
-                this._loadEpicDay(this._epicFirstDay)
-                .then((firstDayData) => {
-                    const firstEpicData = firstDayData[0];
-                    this._epicOldestTimeSec = firstEpicData.timeSec;
-                    console.log("Oldest available data from EPIC: " + firstEpicData.date + ", timeSec=" + this._epicOldestTimeSec);
-                })
-                .catch((error) => {
-                    console.warn("Failed to load first day " + this._epicLastDay + " :" + error)
-                    return;
-                });
+                return this._loadEpicDay(this._epicLastDay)
+            })
+            .then((lastDayData) => {
+                const lastEpicData = lastDayData[lastDayData.length - 1];
+                this._epicLatestTimeSec = lastEpicData.timeSec;
+                console.log("Latest available data from EPIC: " + lastEpicData.date + ", timeSec=" + this._epicLatestTimeSec);
+                resolve(this._epicLatestTimeSec);        
             })
             .catch((error) => {
-                reject("Failed to load available days: " + error)
+                reject("Failed to load latest data:" + error)
             });
+
+            // Every hour we will check for latest data
+            setTimeout(this.loadLatest, 1000 * 60 * 60);
         });
     }
 
@@ -321,11 +331,11 @@ export default class EpicDB {
         });
     }
 
-    async _predictAndLoadFrames(timeSec) {
+    async _predictAndPreloadImages(timeSec) {
         // Predict and load frames based on the given timeSec and timeSpeed
         // This is a heuristic to load frames around the given time
         let numLoadedForward = 0;
-        if (gControlState.play) {
+        if (gControlState.play && !gControlState.holding) {
             // Preload frames for the coming 10s
             const TIME_PREDICT_SEC = 10;
             let nextTime = timeSec
@@ -521,18 +531,18 @@ export default class EpicDB {
         });
     }
 
-    _loadTwoImages(timeSec, epicImageData0, epicImageData1) {
+    _loadTwoBoundImages(timeSec, epicImageData0, epicImageData1) {
         if (epicImageData0 && !epicImageData0.texture)
-            this._loadImage(epicImageData0, () => {loadPredictedFrames(this);});
+            this._loadImage(epicImageData0, () => {preloadFramesAfterComplete(this);});
         if (epicImageData1 && !epicImageData1.texture)
-            this._loadImage(epicImageData1, () => {loadPredictedFrames(this);});
-        loadPredictedFrames(this);
-        function loadPredictedFrames(self) {
+            this._loadImage(epicImageData1, () => {preloadFramesAfterComplete(this);});
+        preloadFramesAfterComplete(this);
+        function preloadFramesAfterComplete(self) {
             if (epicImageData0 && epicImageData0.texture && 
                 epicImageData1 && epicImageData1.texture) {
                 // All frames loaded, now we can return the key frames
                 // But first start loading based on prediction
-                self._predictAndLoadFrames(timeSec);
+                self._predictAndPreloadImages(timeSec);
             }
         }
     }
@@ -560,19 +570,19 @@ export default class EpicDB {
                 const [epicImageData0, epicImageData1] = boundPair;
                 // All days loaded, now we can process the images
                 this._abortLoadingImagesExcept([epicImageData0, epicImageData1], "Aborted loading images except bound frames around timeSec: " + timeSec);
-                this._loadTwoImages(epicImageData0, epicImageData1);
+                this._loadTwoBoundImages(epicImageData0, epicImageData1);
             })
             .catch((error) => {
                 console.error("Error fetching bound key frames: ", error);
             });
         }
         else if (epicImageDataKey0.texture && epicImageDataKey1.texture) {
-            this._predictAndLoadFrames(timeSec);
+            this._predictAndPreloadImages(timeSec);
             return [epicImageDataKey0, epicImageDataKey1];
         }
         else {
             // Start loading the images for the bound frames
-            this._loadTwoImages(timeSec, epicImageDataKey0, epicImageDataKey1);
+            this._loadTwoBoundImages(timeSec, epicImageDataKey0, epicImageDataKey1);
             return [epicImageDataKey0, epicImageDataKey1];
         }
 

@@ -11,7 +11,8 @@ export let gControlState = {
     rangeSec: undefined,
     showText: true,
     zoomEnabled: true,
-    showZoomCircle: true
+    showZoomCircle: true,
+    holding: false
 };
 
 let controlMap = new Map();
