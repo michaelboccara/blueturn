@@ -7,7 +7,7 @@ import { gControlState } from './controlparams.js';
 
 import EpicDB from './epic_db.js';
 import { gScreen} from './screen.js';
-import { gCalcLatLonNorthRotationMatrix, gCalcNormalFromScreenCoord, gCalcLatLonFromScreenCoord, gGetDayFromTimeSec} from './utils.js';
+import { gCalcLatLonNorthRotationMatrix, gCalcNormalFromScreenCoord, gCalcLatLonFromScreenCoord, gGetDayFromTimeSec, gGetDateFromTimeSec} from './utils.js';
 
 export let gEpicZoom = false;
 export let gEpicTimeSec = undefined;
@@ -39,9 +39,9 @@ export async function gInitEpicTime()
         gEpicDB.init()
         .then(() => {
             // Now that we know the limit, set start time
-            if (!gControlState.date)
+            if (!gControlState.day)
             {
-                gControlState.date = gEpicDB.getLastDay();
+                gControlState.day = gEpicDB.getLastDay();
             }
             if (!gControlState.time)
             {
@@ -50,7 +50,7 @@ export async function gInitEpicTime()
                 gControlState.time = now.toUTCString().split(' ')[4];
             }
 
-            let date_time = gControlState.date + " " + gControlState.time;
+            let date_time = gControlState.day + " " + gControlState.time;
             let startTimeSec = EpicDB.getTimeSecFromDateTimeString(date_time);
 
             if (startTimeSec < gEpicDB.getOldestEpicImageTimeSec())
@@ -58,26 +58,26 @@ export async function gInitEpicTime()
                 const bad_date_time = date_time;
                 startTimeSec = gEpicDB.getOldestEpicImageTimeSec();
                 const oldestDate = new Date(startTimeSec * 1000);
-                gControlState.date = oldestDate.toISOString().split('T')[0];
+                gControlState.day = oldestDate.toISOString().split('T')[0];
                 gControlState.time = oldestDate.toUTCString().split(' ')[4];
-                date_time = gControlState.date + " " + gControlState.time;
+                date_time = gControlState.day + " " + gControlState.time;
                 console.warn("Start time " + bad_date_time + " is older than oldest available EPIC image - adjust to oldest time " + date_time);
             }
-            while (startTimeSec > gEpicDB.getLatestEpicImageTimeSec() || !gEpicDB.isDayAvailable(gControlState.date))
+            while (startTimeSec > gEpicDB.getLatestEpicImageTimeSec() || !gEpicDB.isDayAvailable(gControlState.day))
             {
                 const bad_date_time = date_time;
                 startTimeSec -= 3600 * 24; // go back one day
                 const adjustedDate = new Date(startTimeSec * 1000);
-                gControlState.date = adjustedDate.toISOString().split('T')[0];
+                gControlState.day = adjustedDate.toISOString().split('T')[0];
                 gControlState.time = adjustedDate.toUTCString().split(' ')[4];
-                date_time = gControlState.date + " " + gControlState.time;
+                date_time = gControlState.day + " " + gControlState.time;
                 console.warn("Start time " + bad_date_time + " is not in available EPIC range - adjust to 24 hours backwards: " + date_time);
             }
             // align to exact time of closest EPIC image
             if (gEpicDB.hasEpicDataForTimeSec(startTimeSec))
             {
                 console.log("Start time: " + date_time);
-                gSetEpicTimeRange(startTimeSec, gControlState.rangeSec);
+                gSetEpicTimeRange(startTimeSec, gControlState.range);
                 resolve(startTimeSec);
                 return;
             }
@@ -96,7 +96,7 @@ export async function gInitEpicTime()
                     // Should really not happen
                     console.error("Failed to fetch bound key EPIC frames - returned null")
                     console.log("Start time: " + date_time);
-                    gSetEpicTimeRange(startTimeSec, gControlState.rangeSec);
+                    gSetEpicTimeRange(startTimeSec, gControlState.range);
                     resolve(startTimeSec);
                     return;
                 }
@@ -108,13 +108,13 @@ export async function gInitEpicTime()
                 else if (!epicImageData1) {
                     startTimeSec = epicImageData0.timeSec;
                     date_time = epicImageData0.date;
-                    gControlState.date = date_time.split(' ')[0];
+                    gControlState.day = date_time.split(' ')[0];
                     gControlState.time = date_time.split(' ')[1];
                 }
                 else if (!epicImageData0) {
                     startTimeSec = epicImageData1.timeSec;
                     date_time = epicImageData1.date;
-                    gControlState.date = date_time.split(' ')[0];
+                    gControlState.day = date_time.split(' ')[0];
                     gControlState.time = date_time.split(' ')[1];
                 }
                 else {
@@ -124,18 +124,18 @@ export async function gInitEpicTime()
                         date_time = epicImageData1.date;
                     else
                         date_time = epicImageData0.date;
-                    gControlState.date = date_time.split(' ')[0];
+                    gControlState.day = date_time.split(' ')[0];
                     gControlState.time = date_time.split(' ')[1];
                 }
                 console.log("Start time: " + date_time);
-                gSetEpicTimeRange(startTimeSec, gControlState.rangeSec);
+                gSetEpicTimeRange(startTimeSec, gControlState.range);
                 resolve(startTimeSec);
                 return;
             })
             .catch((error) => {
                 console.error("Failed to fetch bound key frames around start time: " + error);
                 console.log("Start time: " + date_time);
-                gSetEpicTimeRange(startTimeSec, gControlState.rangeSec);
+                gSetEpicTimeRange(startTimeSec, gControlState.range);
                 resolve(startTimeSec);
                 return;
             });
@@ -206,7 +206,7 @@ export function gSetEpicTimeSec(timeSec)
     {
         // Looping around default loop time range
         prevEpicTimeSec = latestEpicTimeSec;
-        const loopBackRangeSec = gControlState.rangeSec ? gControlState.rangeSec : 3600 * 24; // default to 24 hours
+        const loopBackRangeSec = gControlState.range ? gControlState.range : 3600 * 24; // default to 24 hours
         timeSec = latestEpicTimeSec - loopBackRangeSec;
         //console.log("Past latest available EPIC image time, jumping back to loop period of " + loopBackRangeSec + "s");
     }
@@ -461,13 +461,39 @@ export function gUpdateEpicTime(time)
 
     if (!gControlState.holding)
     {
-        const targetSpeed = gControlState.play ? gControlState.timeSpeed : 0.0;
+        const targetSpeed = gControlState.play ? gControlState.speed : 0.0;
         if (lastUpdateTime)
         {
             const DECCELERATION_FACTOR = 0.1; // Adjust this value to control the deceleration speed
             const systemDeltaTime = (time - lastUpdateTime) / 1000.0;
             currentTimeSpeed = lerp(currentTimeSpeed, targetSpeed, DECCELERATION_FACTOR);
-            gSetEpicTimeSec(gEpicTimeSec + systemDeltaTime * currentTimeSpeed);
+            let timeSec = gEpicTimeSec + systemDeltaTime * currentTimeSpeed;
+            let snapping = false;
+            if (!gControlState.play)
+            {
+                const [epicImageData0, epicImageData1] = gEpicDB.getBoundKeyFrames(timeSec);
+                if (epicImageData0 && epicImageData1)
+                {
+                    const closestEpicImageData = (timeSec - epicImageData0.timeSec < epicImageData1.timeSec - timeSec) ? epicImageData0 : epicImageData1;
+                    const distSec = Math.abs(timeSec - closestEpicImageData.timeSec);
+                    const SNAP_FACTOR = 0.1;
+                    const speedToClosest = SNAP_FACTOR * distSec / systemDeltaTime;
+                    if (Math.abs(currentTimeSpeed) <= speedToClosest)
+                    {
+                        const TIME_DIFF_EPSILON = 1;
+                        snapping = Math.abs(timeSec - closestEpicImageData.timeSec) > TIME_DIFF_EPSILON;
+                        if (gControlState.snapping && !snapping) {
+                            console.log("Snap to closest EPIC image: " + closestEpicImageData.date);
+                        }
+                        if(snapping)
+                            timeSec = lerp(timeSec, closestEpicImageData.timeSec, SNAP_FACTOR);
+                        else
+                            timeSec = closestEpicImageData.timeSec;
+                    }
+                }
+            }
+            gControlState.snapping = snapping;
+            gSetEpicTimeSec(timeSec);
         }
     }
 
@@ -506,7 +532,7 @@ export function gUpdateEpicInterpolation()
 
         epicImageData = epicImageData1;
         epicImageData.mix01 = 1.0;
-        if (gControlState.play && gControlState.timeSpeed > 0.0)
+        if (gControlState.play && gControlState.speed > 0.0)
             return false; // we will use this false return value to block during play
     }
 
@@ -517,7 +543,7 @@ export function gUpdateEpicInterpolation()
 
         epicImageData = epicImageData0;
         epicImageData.mix01 = 0.0;
-        if (gControlState.play && gControlState.timeSpeed > 0.0)
+        if (gControlState.play && gControlState.speed > 0.0)
             return false; // we will use this false return value to block during play
     }
 
@@ -552,7 +578,7 @@ export function gUpdateEpicInterpolation()
     [gEpicImageData, gEpicImageData0, gEpicImageData1] = 
     [epicImageData, epicImageData0, epicImageData1];
 
-    if (gControlState.play && gControlState.timeSpeed > 0.0 &&
+    if (gControlState.play && gControlState.speed > 0.0 &&
         (!gEpicImageData0.texture || !gEpicImageData1.texture))
         return false; // we will use this false return value to block during play
 

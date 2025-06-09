@@ -72,3 +72,26 @@ html, body, canvas {
 #nasaLogo:hover {
     opacity: 1;
 }
+
+.share-button {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: 5vmin;
+    height: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 10;
+    opacity: 0.3;
+    transition: opacity 0.2s ease;
+}
+
+.share-button:active {
+  opacity: 0.3;
+}
+
+.share-button img {
+    width: 32px;
+    height: 32px;
+}

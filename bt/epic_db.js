@@ -340,9 +340,9 @@ export default class EpicDB {
             const TIME_PREDICT_SEC = 10;
             let nextTime = timeSec
             for (let i = 1; i <= TIME_PREDICT_SEC; i++) {
-                nextTime += i * gControlState.timeSpeed;
+                nextTime += i * gControlState.speed;
                 if (nextTime > this._epicLatestTimeSec) {
-                    const loopBackRangeSec = gControlState.rangeSec ? gControlState.rangeSec : 3600 * 24; // default to 24 hours
+                    const loopBackRangeSec = gControlState.range ? gControlState.range : 3600 * 24; // default to 24 hours
                     nextTime = this._epicLatestTimeSec - loopBackRangeSec;
                     break;
                 }
