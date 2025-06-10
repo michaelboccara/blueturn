@@ -47,7 +47,7 @@ function shareURL(url) {
     .catch((error) => console.log('Error sharing', error));
 }
 
-const USE_TINY_URL = false; // Set to true to use TinyURL for shorter links
+const USE_TINY_URL = true; // Set to true to use TinyURL for shorter links
 
 export function share() {
     gControlState.play = false; // Stop playback before sharing
