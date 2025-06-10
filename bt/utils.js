@@ -47,16 +47,15 @@ export function gCalcLatLonNorthRotationMatrix(latitudeDeg, longitudeDeg) {
 export function gCalcNormalFromScreenCoord(screenCoord, earthRadiusPx, screenWidth, screenHeight) 
 {
   // Convert screen coordinates to normalized device coordinates (NDC)
-  const minSize = Math.min(screenWidth, screenHeight);
   let uv = {
-    x: (2.0 * screenCoord.x - screenWidth) / minSize,
-    y: (2.0 * screenCoord.y - screenHeight) / minSize
+    x: screenCoord.x - screenWidth / 2.0,
+    y: screenCoord.y - screenHeight / 2.0
   };
 
   // Project to sphere in view space
   let earth_uv = {
-    x: uv.x / (earthRadiusPx / (minSize / 2.0)),
-    y: uv.y / (earthRadiusPx / (minSize / 2.0))
+    x: uv.x / earthRadiusPx,
+    y: uv.y / earthRadiusPx
   };
 
   let xySq = earth_uv.x * earth_uv.x + earth_uv.y * earth_uv.y;
@@ -64,6 +63,15 @@ export function gCalcNormalFromScreenCoord(screenCoord, earthRadiusPx, screenWid
   // Normal in view space
   let normal = [earth_uv.x, earth_uv.y, z];
   return normal;
+}
+
+export function gCalcScreenCoordFromNormal(normal, earthRadiusPx, screenWidth, screenHeight) 
+{
+  const screenCoord = {
+    x: normal[0] * earthRadiusPx + screenWidth / 2.0,
+    y: normal[1] * earthRadiusPx + screenHeight / 2.0
+  };
+  return screenCoord;
 }
 
 export function gCalcLatLonFromScreenCoord(screenCoord, centroidMatrix, earthRadiusPx, screenWidth, screenHeight) 
@@ -94,6 +102,19 @@ export function gCalcLatLonFromScreenCoord(screenCoord, centroidMatrix, earthRad
     lat: lat,
     lon: lon
   };
+}
+
+export function gCalculateScreenCoordFromLatLon(lat, lon, centroidMatrix, earthRadiusPx, screenWidth, screenHeight)
+{
+  const globeLatLonMatrix = gCalcLatLonNorthRotationMatrix(lat, lon);
+  // take Z axis of transpose
+  const globeNormal = vec3.fromValues(
+    globeLatLonMatrix[2], 
+    globeLatLonMatrix[5], 
+    globeLatLonMatrix[8]);
+  let normal = vec3.create();
+  vec3.transformMat3(normal, globeNormal, centroidMatrix);
+  return gCalcScreenCoordFromNormal(normal, earthRadiusPx, screenWidth, screenHeight);
 }
 
 export function gArrayBoundIndices(array, key, strict) 

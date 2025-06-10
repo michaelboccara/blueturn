@@ -7,7 +7,13 @@ import { gControlState } from './controlparams.js';
 
 import EpicDB from './epic_db.js';
 import { gScreen} from './screen.js';
-import { gCalcLatLonNorthRotationMatrix, gCalcNormalFromScreenCoord, gCalcLatLonFromScreenCoord, gGetDayFromTimeSec, gGetDateFromTimeSec} from './utils.js';
+import { 
+    gCalcLatLonNorthRotationMatrix, 
+    gCalcNormalFromScreenCoord, 
+    gCalcLatLonFromScreenCoord, 
+    gGetDayFromTimeSec, 
+    gCalculateScreenCoordFromLatLon} 
+    from './utils.js';
 
 export let gEpicTimeSec = undefined;
 export let gDateText = undefined;
@@ -192,7 +198,24 @@ function getPivotNormal(pivotCoord, pivotEpicImageData, currentEpicImageData)
 export function gSetInitialEpicTimeSec(startTimeSec)
 {
     gEpicDB.setTimeRange(startTimeSec, gControlState.range);
-    gSetEpicTimeSec(startTimeSec);
+    const timeSuccess = gSetEpicTimeSec(startTimeSec);
+
+    if (timeSuccess && gControlState.zoom && gEpicImageData)
+    {
+        gControlState.play = false;
+        const [latStr, lonStr] = gControlState.zoom.split(',');
+        const lat = parseFloat(latStr);
+        const lon = parseFloat(lonStr);
+        const zoomPivotPos = gCalculateScreenCoordFromLatLon(lat, lon, 
+            gEpicImageData.centroid_matrix,
+            gEpicImageData.earthRadius / 2.0 * Math.min(canvas.width, canvas.height),
+            canvas.width, canvas.height
+        );
+        if (zoomPivotPos)
+        {
+            setZoom(true, zoomPivotPos);
+        }
+    }
 }
 
 export function gSetEpicTimeSec(timeSec)
@@ -224,6 +247,7 @@ export function gSetEpicTimeSec(timeSec)
 
     gEpicTimeSec = timeSec;
 
+    let interpolationSuccess;
     if (prevEpicTimeSec)
     {
         if(gEpicDB.isTimeSecFirstOfDay(timeSec) && timeSec != oldestEpicTimeSec)
@@ -246,7 +270,10 @@ export function gSetEpicTimeSec(timeSec)
                 timeSec = nextDayTimeSec; // go back one day
             }
         }
-        if (!gUpdateEpicInterpolation())
+
+        interpolationSuccess = gUpdateEpicInterpolation();
+
+        if (!interpolationSuccess)
         {
             // block the time change if we cannot interpolate EPIC images
             timeSec = prevEpicTimeSec;
@@ -262,14 +289,16 @@ export function gSetEpicTimeSec(timeSec)
         }
     }
 
-    if (timeSec != gEpicTimeSec || !prevEpicTimeSec)
+    if (!interpolationSuccess || timeSec != gEpicTimeSec || !prevEpicTimeSec)
     {
         gEpicTimeSec = timeSec;
         // Try to interpolate on fixed time
-        gUpdateEpicInterpolation();
+        interpolationSuccess = gUpdateEpicInterpolation();
     }
 
     updateDateText(gEpicTimeSec);
+
+    return interpolationSuccess;
 }
 
 function gTagZoomEvent(triggerEvent)
