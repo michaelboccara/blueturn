@@ -1,5 +1,5 @@
 import { gControlState, gControlMap } from './controlparams.js';
-import { gDateText } from './app.js';
+import { gEpicTimeSec, gDateText } from './app.js';
 import { gGetDateFromTimeSec } from './utils.js';
 
 function toSimpleString(value) {
@@ -17,7 +17,7 @@ function toSimpleString(value) {
 }
 
 function buildURL() {
-  let url = window.location.href;
+  let url = window.location.origin + window.location.pathname;
   let first = true;
   gControlMap.forEach((cb, param) => {
     if (gControlState[param] !== undefined) {
@@ -50,6 +50,10 @@ function shareURL(url) {
 const USE_TINY_URL = true; // Set to true to use TinyURL for shorter links
 
 export function share() {
+    const day_time = gGetDateFromTimeSec(gEpicTimeSec);
+    const day_time_split = day_time.split(' ');
+    gControlState.day = day_time_split[0];
+    gControlState.time = day_time_split[1];
     gControlState.play = false; // Stop playback before sharing
     if (!USE_TINY_URL) {
         shareURL(buildURL());

@@ -78,7 +78,7 @@ export async function gInitEpicTime()
             if (gEpicDB.hasEpicDataForTimeSec(startTimeSec))
             {
                 console.log("Start time: " + date_time);
-                gSetEpicTimeRange(startTimeSec, gControlState.range);
+                gSetInitialEpicTimeSec(startTimeSec);
                 resolve(startTimeSec);
                 return;
             }
@@ -97,7 +97,7 @@ export async function gInitEpicTime()
                     // Should really not happen
                     console.error("Failed to fetch bound key EPIC frames - returned null")
                     console.log("Start time: " + date_time);
-                    gSetEpicTimeRange(startTimeSec, gControlState.range);
+                    gSetInitialEpicTimeSec(startTimeSec);
                     resolve(startTimeSec);
                     return;
                 }
@@ -129,14 +129,14 @@ export async function gInitEpicTime()
                     gControlState.time = date_time.split(' ')[1];
                 }
                 console.log("Start time: " + date_time);
-                gSetEpicTimeRange(startTimeSec, gControlState.range);
+                gSetInitialEpicTimeSec(startTimeSec);
                 resolve(startTimeSec);
                 return;
             })
             .catch((error) => {
                 console.error("Failed to fetch bound key frames around start time: " + error);
                 console.log("Start time: " + date_time);
-                gSetEpicTimeRange(startTimeSec, gControlState.range);
+                gSetInitialEpicTimeSec(startTimeSec);
                 resolve(startTimeSec);
                 return;
             });
@@ -189,9 +189,9 @@ function getPivotNormal(pivotCoord, pivotEpicImageData, currentEpicImageData)
     return normal;
 }
 
-export function gSetEpicTimeRange(startTimeSec, rangeSec)
+export function gSetInitialEpicTimeSec(startTimeSec)
 {
-    gEpicDB.setTimeRange(startTimeSec, rangeSec);
+    gEpicDB.setTimeRange(startTimeSec, gControlState.range);
     gSetEpicTimeSec(startTimeSec);
 }
 
