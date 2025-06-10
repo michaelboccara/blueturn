@@ -95,3 +95,19 @@ html, body, canvas {
     width: 32px;
     height: 32px;
 }
+
+#ui {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none; /* So it doesn’t block clicks */
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+    z-index: 9999; /* Ensure it’s on top */
+}
+
+#ui.hidden {
+    opacity: 0;
+}
