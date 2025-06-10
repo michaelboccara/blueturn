@@ -77,7 +77,7 @@ export default class EpicDB {
             });
 
             // Every hour we will check for latest data
-            setTimeout(this.loadLatest, 1000 * 60 * 60);
+            setTimeout(() => this.loadLatest(), 1000 * 60 * 60);
         });
     }
 
