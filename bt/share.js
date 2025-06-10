@@ -1,5 +1,5 @@
 import { gControlState, gControlMap } from './controlparams.js';
-import { gEpicTimeSec } from './app.js';
+import { gDateText } from './app.js';
 import { gGetDateFromTimeSec } from './utils.js';
 
 function toSimpleString(value) {
@@ -30,25 +30,15 @@ function buildURL() {
 }
 
 function shareURL(url) {
-    const day_time = gGetDateFromTimeSec(gEpicTimeSec);
-    const day_time_split = day_time.split(' ');
-    gControlState.day = day_time_split[0];
-    gControlState.time = day_time_split[1];
-    const date = new Date(gEpicTimeSec * 1000);
-    const dayPretty = date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    const timePretty = date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    });    
+    let shareText = "I am sharing the Whole Earth with you...\n";
+    shareText += "Time info: " + gDateText + "\n";
+    if(gControlState.zoom)
+      shareText += "GPS Info: " + gControlState.zoom + "\n";
+    const shareTextWithURL = shareText + url;
+    console.log("Sharing this:\n" + shareTextWithURL);
     navigator.share({
         title: document.title,
-        text: "I am sharing the Whole Earth with you...\nDay: " + dayPretty + "\nTime: " + timePretty + " (UTC)\n",
+        text: shareText,
         url: url
     })
     .then(() => {

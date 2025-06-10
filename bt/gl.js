@@ -9,18 +9,19 @@ import {
   gEpicImageData, 
   gEpicImageData0, 
   gEpicImageData1, 
-  gPivotEpicImageData,
-  gEpicZoom
+  gZoom,
+  gPivotEpicImageData
 } 
 from './app.js';
 import { gControlState } from './controlparams.js';
+import { gScreen } from './screen.js';
 
 const canvas = document.getElementById('glcanvas');
 const gl = canvas.getContext('webgl2');
 const pageLoadTime = Date.now();
 
-let epicZoomFactor = 1.0;
-let epicMaxZoom = 2.0;
+let zoomFactor = 1.0;
+let maxZoom = 2.0;
 let mixBMEpicFactor = undefined;
 
 // Load shader from file
@@ -278,32 +279,49 @@ Promise.all([
     gl.uniform1f(gl.getUniformLocation(program, 'mixBmEpic'), mixBMEpicFactor);
   }
 
+  function glUpdateZoomCircleRadius()
+  {
+      let zoomCircleRadius = 200.0;
+      const cursorPos = gScreen.getCursorPos();
+      const pivotCursorVector = {
+        x: cursorPos.x - gPivotEpicImageData.pivot_coordinates.x,
+        y: cursorPos.y - gPivotEpicImageData.pivot_coordinates.y
+      };
+      const cursorPivotDistance = Math.sqrt(pivotCursorVector.x * pivotCursorVector.x + pivotCursorVector.y * pivotCursorVector.y);
+      zoomCircleRadius = Math.max(zoomCircleRadius, cursorPivotDistance);
+      gl.uniform1f(gl.getUniformLocation(program, 'zoomCircleRadius'), zoomCircleRadius);
+  }
+
   function glUpdateUniforms()
   {
     const [hasEpicData0, hasEpicTexture0] = glUpdateEPICImage(gEpicImageData0, 'epicImage[0]');
     const [hasEpicData1, hasEpicTexture1] = glUpdateEPICImage(gEpicImageData1, 'epicImage[1]');
     const [hasEpicData, hasEpicTexture] = glUpdateEPICImage(gEpicImageData, 'curr_epicImage');
-    gl.uniform1i(gl.getUniformLocation(program, 'showPivotCircle'), gControlState.showZoomCircle);
     if (gEpicImageData)
       gl.uniform1f(gl.getUniformLocation(program, 'curr_epicImage.mix01'), gEpicImageData.mix01 );
     glSetBluemarbleEpicMixFactor(program);
 
-    let epicTargetZoomFactor = gEpicZoom ? epicMaxZoom : 1.0;
+
     if (gPivotEpicImageData)
     {
-      epicZoomFactor += 0.03 * (epicTargetZoomFactor - epicZoomFactor); 
+      const targetZoomFactor = gZoom ? maxZoom : 1.0;
+      zoomFactor += 0.03 * (targetZoomFactor - zoomFactor); 
       glUpdateEPICImage(gPivotEpicImageData, 'pivot_epicImage');
       gl.uniform2f(gl.getUniformLocation(program, 'pivotScreenCoord'), 
         gPivotEpicImageData.pivot_coordinates.x, 
         gPivotEpicImageData.pivot_coordinates.y);
-      gl.uniform1i(gl.getUniformLocation(program, 'epicZoomEnabled'), gControlState.zoomEnabled);
-      gl.uniform1f(gl.getUniformLocation(program, 'epicZoomFactor'), epicZoomFactor);
+      gl.uniform1i(gl.getUniformLocation(program, 'zoomActive'), true);
+      gl.uniform1f(gl.getUniformLocation(program, 'zoomFactor'), zoomFactor);
+
+      gl.uniform1i(gl.getUniformLocation(program, 'showZoomCircle'), 1);
+      glUpdateZoomCircleRadius();
     }
     else
     {
-      epicZoomFactor = 1.0;
-      gl.uniform1i(gl.getUniformLocation(program, 'epicZoomEnabled'), false);
-      gl.uniform1f(gl.getUniformLocation(program, 'epicZoomFactor'), epicZoomFactor);
+      zoomFactor = 1.0;
+      gl.uniform1i(gl.getUniformLocation(program, 'zoomActive'), false);
+      gl.uniform1f(gl.getUniformLocation(program, 'zoomFactor'), zoomFactor);
+      gl.uniform1i(gl.getUniformLocation(program, 'showZoomCircle'), 1);
     }
 
     epicImageTracker.sendEvent(hasEpicTexture0 && hasEpicTexture1);

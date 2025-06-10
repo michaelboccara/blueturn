@@ -87,8 +87,8 @@ html, body, canvas {
     transition: opacity 0.2s ease;
 }
 
-.share-button:active {
-  opacity: 0.3;
+.share-button:hover {
+  opacity: 1;
 }
 
 .share-button img {
@@ -101,8 +101,7 @@ html, body, canvas {
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
-    pointer-events: none; /* So it doesn’t block clicks */
+    height: 10vmin;
     opacity: 1;
     transition: opacity 0.5s ease-in-out;
     z-index: 9999; /* Ensure it’s on top */

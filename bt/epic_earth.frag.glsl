@@ -23,7 +23,8 @@ out vec4 fragColor;
 #define R1 1.0094	// Atmosphere radius (6420 km) 
 
 uniform vec2 pivotScreenCoord;
-uniform bool showPivotCircle;
+uniform bool showZoomCircle;
+uniform float zoomCircleRadius;
 
 struct EPICImageInfo
 {
@@ -38,8 +39,8 @@ struct EPICImageInfo
 uniform EPICImageInfo epicImage[2];
 uniform EPICImageInfo curr_epicImage;
 uniform float mixBmEpic;
-uniform bool epicZoomEnabled;
-uniform float epicZoomFactor;
+uniform bool zoomActive;
+uniform float zoomFactor;
 uniform EPICImageInfo pivot_epicImage;
 
 vec2 fragCoordToUV(vec2 fragCoord)
@@ -87,10 +88,10 @@ vec3 Render(in vec2 fragCoord)
     mat3 GroundMatrix = curr_epicImage.centroid_matrix;
 
     vec4 pivot_circle_color = vec4(0.0, 0.0, 0.0, 0.0);
-    float pivot_circle_radius = 200.0;
+    float pivot_circle_radius = zoomCircleRadius;
     float pivot_circle_descent = 200.0;
 
-    if (epicZoomEnabled)
+    if (zoomActive)
     {
         vec2 nozoom_uv = uv;
 
@@ -110,16 +111,16 @@ vec3 Render(in vec2 fragCoord)
             pivot_uv = pivot_Normal.xy * pivot_epicImage.earth_radius;
 
             uv -= press_uv;
-            uv /= epicZoomFactor;
+            uv /= zoomFactor;
             uv += pivot_uv;
 
-            uv = mix(nozoom_uv, uv, epicZoomFactor - 1.0);
+            uv = mix(nozoom_uv, uv, zoomFactor - 1.0);
 
-            if (showPivotCircle)
+            if (showZoomCircle)
             {
                 float pixelToUVFactor = 1.0 / min(iResolution.x, iResolution.y);
-                pivot_circle_radius *= 1.0 / (epicZoomFactor - 1.0); 
-                pivot_circle_descent *= 1.0 / (epicZoomFactor - 1.0); 
+                pivot_circle_radius *= 1.0 / (zoomFactor - 1.0); 
+                pivot_circle_descent *= 1.0 / (zoomFactor - 1.0); 
                 pivot_circle_color.a = 
                     smoothstep(
                         pivot_circle_radius * pixelToUVFactor, 
@@ -151,7 +152,7 @@ vec3 Render(in vec2 fragCoord)
     // Sphere hit:
     col = col * step(0.0, Normal.z);
 
-    if (showPivotCircle)
+    if (showZoomCircle)
     {
         col = mix(col, pivot_circle_color.rgb, pivot_circle_color.a);
     }

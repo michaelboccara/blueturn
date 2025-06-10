@@ -122,6 +122,11 @@ class Screen
     #MOVE_2_CROSS_THRESHOLD = 0.1;
     #PINCH_STEP = canvas.width / 50;
 
+    getCursorPos()
+    {
+        return this.#lastMovePos;
+    }
+
     addEventListener(eventStr, cb)
     {
         let cbArray = this.#events.get(eventStr);
