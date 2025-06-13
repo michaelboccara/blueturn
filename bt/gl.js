@@ -281,16 +281,17 @@ Promise.all([
 
   function glUpdateZoomCircleRadius()
   {
-      let zoomCircleRadius = 200.0;
+      let zoomCircleRadius = 10000.0;
       const cursorPos = gScreen.getCursorPos();
       if (cursorPos)
       {
+        const minZoomCircleRadius = 200.0;
         const pivotCursorVector = {
           x: cursorPos.x - gPivotEpicImageData.pivot_coordinates.x,
           y: cursorPos.y - gPivotEpicImageData.pivot_coordinates.y
         };
         const cursorPivotDistance = Math.sqrt(pivotCursorVector.x * pivotCursorVector.x + pivotCursorVector.y * pivotCursorVector.y);
-        zoomCircleRadius = Math.max(zoomCircleRadius, cursorPivotDistance);
+        zoomCircleRadius = Math.max(minZoomCircleRadius, cursorPivotDistance);
       }
       gl.uniform1f(gl.getUniformLocation(program, 'zoomCircleRadius'), zoomCircleRadius);
   }
